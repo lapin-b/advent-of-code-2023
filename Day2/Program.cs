@@ -10,7 +10,7 @@ class Program
 
     public static void Main(string[] args)
     {
-        var input_filename = args.Length > 0 ? args[0] : "files/input.txt";
+        var input_filename = args.Length > 0 ? args[0] : "files/test.txt";
         var input_lines = File.ReadAllLines(input_filename);
 
         var cubes_regex = new Regex(@"(?<cubes_count>\d+) (?<cube_color>red|green|blue)");
@@ -35,7 +35,7 @@ class Program
         }).ToArray();
 
         // Part 1: What games are possible with 12 red, 13 green and 14 blue cubes
-        var games_meeting_criteria_part1 = games
+        var grouped_games_enumerable = games
             .Select(game =>
             {
                 return (
@@ -46,8 +46,9 @@ class Program
                         .Select(round_groups => (round_groups.Key, Count: round_groups.Max(round => round.Count)))
                         .ToDictionary(tuple => tuple.Key, tuple => tuple.Count)
                 );
-            })
-            .Where(game => 
+            });
+
+        var games_meeting_criteria_part1 = grouped_games_enumerable.Where(game =>
                 game.CubeCountsByColor[CUBE_RED] <= 12 &&
                 game.CubeCountsByColor[CUBE_GREEN] <= 13 &&
                 game.CubeCountsByColor[CUBE_BLUE] <= 14)
@@ -58,5 +59,12 @@ class Program
             .Sum(g => g.GameId);
 
         Console.WriteLine($"Sum of games ID part 1: {games_meeting_criteria_part1}");
+
+        // For each game, find the minimum of cubes that could have been present
+        var games_power_total = grouped_games_enumerable.Select(
+            game => game.CubeCountsByColor[CUBE_RED] * game.CubeCountsByColor[CUBE_GREEN] * game.CubeCountsByColor[CUBE_BLUE]
+        ).Sum();
+
+        Console.WriteLine($"Game power: {games_power_total}");
     }
 }
