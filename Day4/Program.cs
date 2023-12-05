@@ -32,28 +32,29 @@ class Program
         Console.WriteLine($"Part 1: Scratchcards total points is {total_scratchcards_scores}");
 
         // Part 2: How many scratchcards do we end up with ?
-        var cards_to_won_cards_count = scratchcards.Select(card => (card.CardId, Points: CalculateMatchingNumbersCount(card)))
+        var cards_to_won_cards_count = scratchcards
+            .Select(card => (card.CardId, Points: CalculateMatchingNumbersCount(card)))
             .ToDictionary(tuple => tuple.CardId, tuple => tuple.Points);
 
-        var cards_workqueue = scratchcards.Select(card => card.CardId).ToList();
-        var total_cards = 0;
+        var cards_buckets = scratchcards
+            .Select(card => card.CardId)
+            .ToDictionary(card => card, card => 1);
 
-        // Idea: for each scratchcard, we append the scratchcards we have won, increment the total_cards by one
-        // and sort the list until we don't win any more cards
-        while(cards_workqueue.Count > 0) {
-            var current_card_id = cards_workqueue[0];
-            cards_workqueue.RemoveAt(0);
-            total_cards++;
+        for(int card_id = 1; card_id <= cards_buckets.Count; card_id++) {
+            var cards_won = cards_to_won_cards_count[card_id];
 
-            var cards_won_count = cards_to_won_cards_count[current_card_id];
-            //Console.WriteLine($"Scratchcard {current_card_id} has won {cards_won_count} cards");
-            for(int i = 1; i <= cards_won_count; i++) {
-                cards_workqueue.Add(current_card_id + i);
+            if(cards_won > 0) {
+                Console.WriteLine($"Card ID {card_id} won {cards_won}, from ID {card_id + 1} to {card_id + cards_won}");
+            } else {
+                Console.WriteLine($"Card ID {card_id} won nothing");
             }
 
-            cards_workqueue.Sort();
+            for(int i = 1; i <= cards_won; i++) {
+                cards_buckets[card_id + i] += cards_buckets[card_id];
+            }
         }
 
+        var total_cards = cards_buckets.Values.Sum();
         Console.WriteLine($"Part 2: We have a total of {total_cards} scratchcards in the pile");
     }
 
