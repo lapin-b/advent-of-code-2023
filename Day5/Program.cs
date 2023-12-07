@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
 class AlmanacMap
@@ -9,13 +10,13 @@ class AlmanacMap
 
     public List<MapRange> Ranges { get; private set; } = new();
 
-    public uint ConvertResourceLocation(uint source_location)
+    public ulong ConvertResourceLocation(ulong source_location)
     {
         var range_array = Ranges
-            .Where(map_range => source_location >= map_range.SourceRangeStart && source_location <= map_range.SourceRangeStart + map_range.RangeLength)
+            .Where(map_range => source_location >= map_range.SourceRangeStart && source_location < map_range.SourceRangeStart + map_range.RangeLength)
             .ToArray();
 
-        uint destination_value;
+        ulong destination_value;
         if (range_array.Length > 0)
         {
             var range = range_array[0];
@@ -42,7 +43,7 @@ class AlmanacMap
         var parsed_ranges = map_items.Select(ranges =>
         {
             var split_ranges = ranges.Split(" ");
-            return new MapRange(Convert.ToUInt32(split_ranges[0]), Convert.ToUInt32(split_ranges[1]), Convert.ToUInt32(split_ranges[2]));
+            return new MapRange(Convert.ToUInt64(split_ranges[0]), Convert.ToUInt64(split_ranges[1]), Convert.ToUInt64(split_ranges[2]));
         });
 
         return new AlmanacMap()
@@ -54,15 +55,16 @@ class AlmanacMap
     }
 }
 
-record MapRange(uint DestinationRangeStart, uint SourceRangeStart, uint RangeLength);
+record MapRange(ulong DestinationRangeStart, ulong SourceRangeStart, ulong RangeLength);
 
-record SeedRange(uint SeedStart, uint SeedCount)
+record SeedRange(ulong SeedStart, ulong SeedCount)
 {
-    public IEnumerable<uint> EnumerateSeeds()
+    public IEnumerable<ulong> EnumerateSeeds()
     {
-        for (uint i = 0; i < SeedCount; i++)
+        var seed_end = SeedStart + SeedCount;
+        for (ulong i = SeedStart; i < seed_end; i++)
         {
-            yield return SeedStart + i;
+            yield return i;
         }
     }
 }
@@ -75,7 +77,7 @@ class Program
         var file_content = File.ReadAllText(filename);
 
         var map_groups = file_content.Split("\n\n").ToList();
-        var seeds_part_1 = map_groups[0].Split(":", StringSplitOptions.TrimEntries)[1].Split(" ").Select(n => Convert.ToUInt32(n)).ToArray();
+        var seeds_part_1 = map_groups[0].Split(":", StringSplitOptions.TrimEntries)[1].Split(" ").Select(n => Convert.ToUInt64(n)).ToArray();
         var seeds_part_2 = seeds_part_1.Chunk(2).Select((seed_group) => new SeedRange(seed_group[0], seed_group[1])).ToArray();
 
         map_groups.RemoveAt(0);
@@ -96,15 +98,27 @@ class Program
         Console.WriteLine($"Lowest seed location part 1: {lowest_location_part1}");
 
         var lowest_location_part2 = seeds_part_2
-        .AsParallel()
         .Select(seeds_range =>
         {
-            return seeds_range.EnumerateSeeds()
-                .Aggregate(uint.MaxValue, (range_minimum, seed) =>
-                {
-                    var seed_location = maps.Aggregate(seed, (current_location, map) => map.ConvertResourceLocation(current_location));
-                    return seed_location < range_minimum ? seed_location : range_minimum;
-                });
+            var partitioner = Partitioner.Create(seeds_range.EnumerateSeeds(), EnumerablePartitionerOptions.NoBuffering);
+
+            Console.Write($"Current seed: {seeds_range.SeedStart} -> {seeds_range.SeedStart + seeds_range.SeedCount - 1} ({seeds_range.SeedCount}). ");
+
+            var seed_mimimum = partitioner.AsParallel()
+                .AsUnordered()
+                .Aggregate(
+                    ulong.MaxValue,
+                    (thread_minimum, seed) =>
+                    {
+                        var seed_location = maps.Aggregate(seed, (current_loc, map) => map.ConvertResourceLocation(current_loc));
+                        return seed_location < thread_minimum ? seed_location : thread_minimum;
+                    },
+                    (all_threads_minimum, thread_minimum) => thread_minimum < all_threads_minimum ? thread_minimum : all_threads_minimum,
+                    all_threads_minimum => all_threads_minimum
+                );
+
+            Console.WriteLine($"eed minimum: {seed_mimimum}");
+            return seed_mimimum;
         })
         .Min();
 
