@@ -16,15 +16,18 @@ class AlmanacMap
             .ToArray();
 
         uint destination_value;
-        if(range_array.Length > 0){
+        if (range_array.Length > 0)
+        {
             var range = range_array[0];
 
             var difference = source_location - range.SourceRangeStart;
             destination_value = range.DestinationRangeStart + difference;
-            Console.WriteLine($"{FromResource} -> {ToResource} {source_location} = {destination_value} (diff {difference}) ({range})");
-        } else {
+            //Console.WriteLine($"{FromResource} -> {ToResource} {source_location} = {destination_value} (diff {difference}) ({range})");
+        }
+        else
+        {
             destination_value = source_location;
-            Console.WriteLine($"{FromResource} -> {ToResource} {source_location} = no match, using source");
+            //Console.WriteLine($"{FromResource} -> {ToResource} {source_location} = no match, using source");
         }
 
         return destination_value;
@@ -53,6 +56,17 @@ class AlmanacMap
 
 record MapRange(uint DestinationRangeStart, uint SourceRangeStart, uint RangeLength);
 
+record SeedRange(uint SeedStart, uint SeedCount)
+{
+    public IEnumerable<uint> EnumerateSeeds()
+    {
+        for (uint i = 0; i < SeedCount; i++)
+        {
+            yield return SeedStart + i;
+        }
+    }
+}
+
 class Program
 {
     public static void Main(string[] args)
@@ -61,7 +75,9 @@ class Program
         var file_content = File.ReadAllText(filename);
 
         var map_groups = file_content.Split("\n\n").ToList();
-        var seeds = map_groups[0].Split(":", StringSplitOptions.TrimEntries)[1].Split(" ").Select(n => Convert.ToUInt32(n)).ToArray();
+        var seeds_part_1 = map_groups[0].Split(":", StringSplitOptions.TrimEntries)[1].Split(" ").Select(n => Convert.ToUInt32(n)).ToArray();
+        var seeds_part_2 = seeds_part_1.Chunk(2).Select((seed_group) => new SeedRange(seed_group[0], seed_group[1])).ToArray();
+
         map_groups.RemoveAt(0);
 
         var maps = map_groups.Select(group => AlmanacMap.FromPuzzleInput(group)).ToArray();
@@ -71,13 +87,26 @@ class Program
         // and .NET lists preserve ordering.
 
         // Part 1: lowest seed location, each item is a seed
-        var lowest_location = seeds.Select(seed =>
+        var lowest_location_part1 = seeds_part_1.Select(seed =>
         {
-            Console.WriteLine($"Seed = {seed}");
             return maps.Aggregate(seed, (current_location, map) => map.ConvertResourceLocation(current_location));
         })
         .Min();
 
-        Console.WriteLine($"Lowest seed location: {lowest_location}");
+        Console.WriteLine($"Lowest seed location part 1: {lowest_location_part1}");
+
+        var lowest_location_part2 = seeds_part_2.Aggregate(uint.MaxValue, (current_seed_minimum, seed_range) =>
+        {
+            var range_minimum = seed_range.EnumerateSeeds()
+                .Aggregate(uint.MaxValue, (range_minimum, seed) =>
+                {
+                    var seed_location = maps.Aggregate(seed, (current_location, map) => map.ConvertResourceLocation(current_location));
+                    return seed_location < range_minimum ? seed_location : range_minimum;
+                });
+
+            return range_minimum < current_seed_minimum ? range_minimum : current_seed_minimum;
+        });
+
+        Console.WriteLine($"Lowest seed location part 2: {lowest_location_part2}");
     }
 }
