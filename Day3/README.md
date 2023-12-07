@@ -1,4 +1,4 @@
-# Advent of Code 2023, day 1
+# Advent of Code 2023, day 3
 
 While the code seems to work on the example given in the puzzle instructions, it doesn't on the actual puzzle input. Since this particular puzzle has caused me a headache, I'm leaving it unfinished for now.
 
