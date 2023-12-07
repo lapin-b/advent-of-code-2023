@@ -95,17 +95,18 @@ class Program
 
         Console.WriteLine($"Lowest seed location part 1: {lowest_location_part1}");
 
-        var lowest_location_part2 = seeds_part_2.Aggregate(uint.MaxValue, (current_seed_minimum, seed_range) =>
+        var lowest_location_part2 = seeds_part_2
+        .AsParallel()
+        .Select(seeds_range =>
         {
-            var range_minimum = seed_range.EnumerateSeeds()
+            return seeds_range.EnumerateSeeds()
                 .Aggregate(uint.MaxValue, (range_minimum, seed) =>
                 {
                     var seed_location = maps.Aggregate(seed, (current_location, map) => map.ConvertResourceLocation(current_location));
                     return seed_location < range_minimum ? seed_location : range_minimum;
                 });
-
-            return range_minimum < current_seed_minimum ? range_minimum : current_seed_minimum;
-        });
+        })
+        .Min();
 
         Console.WriteLine($"Lowest seed location part 2: {lowest_location_part2}");
     }
