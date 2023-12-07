@@ -5,8 +5,8 @@ class AlmanacMap
 {
     private static Regex MAP_RESOURCES_REGEX = new(@"^(?<from_resource>[a-z]*)-to-(?<to_resource>[a-z]*) map:$");
 
-    public string FromResource { get; private set; }
-    public string ToResource { get; private set; }
+    public string FromResource { get; private set; } = "";
+    public string ToResource { get; private set; } = "";
 
     public List<MapRange> Ranges { get; private set; } = new();
 
