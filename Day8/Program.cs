@@ -27,22 +27,22 @@ class Program
         // Part 1
         var tape_step = 0;
 
-        // {
-        //     var current_node = nodes["AAA"];
-        //     do
-        //     {
-        //         var current_instruction = left_right_tape[tape_step % left_right_tape.Length];
-        //         var next_node_name = current_instruction == 'L' ? current_node.LeftNode : current_node.RightNode;
-        //         Console.WriteLine($"{tape_step} {current_node.NodeName} {current_instruction} => {next_node_name}");
-        //         current_node = nodes[next_node_name];
-        //         tape_step += 1;
-        //     } while (current_node.NodeName != "ZZZ");
-        // }
+        {
+            var current_node = nodes["AAA"];
+            do
+            {
+                var current_instruction = left_right_tape[tape_step % left_right_tape.Length];
+                var next_node_name = current_instruction == 'L' ? current_node.LeftNode : current_node.RightNode;
+                Console.WriteLine($"{tape_step} {current_node.NodeName} {current_instruction} => {next_node_name}");
+                current_node = nodes[next_node_name];
+                tape_step += 1;
+            } while (current_node.NodeName != "ZZZ");
+        }
 
         Console.WriteLine($"Part 1 of steps required: {tape_step} steps");
 
         // Part 2
-        tape_step = 0;
+        /*tape_step = 0;
         {
             var current_nodes = nodes.Where(pair => pair.Key.EndsWith("A")).Select(pair => pair.Value).ToArray();
             // Sanity check the puzzle input before going into the loop
@@ -66,6 +66,6 @@ class Program
             } while (current_nodes.Where(node => node.NodeName.EndsWith("Z")).Count() != current_nodes.Length);
         }
 
-        Console.WriteLine($"Part 2 of steps required: {tape_step} steps");
+        Console.WriteLine($"Part 2 of steps required: {tape_step} steps");*/
     }
 }
