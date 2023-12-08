@@ -25,47 +25,47 @@ class Program
         .ToDictionary(node => node.NodeName);
 
         // Part 1
-        {
-            var tape_step = 0;
-            var current_node = nodes["AAA"];
-            do
-            {
-                var current_instruction = left_right_tape[tape_step % left_right_tape.Length];
-                var next_node_name = current_instruction == 'L' ? current_node.LeftNode : current_node.RightNode;
-                // Console.WriteLine($"{tape_step} {current_node.NodeName} {current_instruction} => {next_node_name}");
-                current_node = nodes[next_node_name];
-                tape_step += 1;
-            } while (current_node.NodeName != "ZZZ");
-            Console.WriteLine($"Part 1 of steps required: {tape_step} steps");
-        }
+        var part1_required_steps = CalculateStepsRequired(new[]{ nodes["AAA"] }, node => node.NodeName == "ZZZ", nodes, left_right_tape);
+        Console.WriteLine($"Part 1: required_steps = {part1_required_steps}");
 
         // Part 2
         var starting_nodes = nodes.Where(pair => pair.Key.EndsWith("A")).Select(pair => pair.Value).ToArray();
         // Sanity check the puzzle input before going into the loop
+        // The instructions tell us the count of nodes ending with A == count of nodes ending with Z
         if (nodes.Where(pair => pair.Key.EndsWith("Z")).Count() != starting_nodes.Length)
             throw new Exception("Sanity check: Count of nodes ending in A is not equal to the count of nodes ending in Z");
 
-        var part2_required_steps = starting_nodes.Select(starting_node =>
+        var part2_required_steps = CalculateStepsRequired(starting_nodes, node => node.NodeName.EndsWith("Z"), nodes, left_right_tape);
+        Console.WriteLine($"Part 2: required steps = {part2_required_steps}");
+    }
+
+    private static ulong CalculateStepsRequired(MapNode[] startingNodes, Func<MapNode, bool> endCondition, Dictionary<string, MapNode> nodesMap, char[] instructions_tape)
+    {
+        return startingNodes.Select(starting_node =>
         {
             var current_node = starting_node;
             ulong steps = 0;
             do
             {
-                var current_instruction = left_right_tape[steps % (ulong)left_right_tape.Length];
+                var current_instruction = instructions_tape[steps % (ulong)instructions_tape.Length];
                 var next_node_name = current_instruction == 'L' ? current_node.LeftNode : current_node.RightNode;
-                current_node = nodes[next_node_name];
+                current_node = nodesMap[next_node_name];
                 steps += 1;
-            } while (!current_node.NodeName.EndsWith("Z"));
+            } while (!endCondition(current_node));
+
             Console.WriteLine($"Node: {starting_node.NodeName} = {steps}");
+
             return steps;
-        }).Aggregate(1uL, LCM);
-        Console.WriteLine($"Part 2: required steps = {part2_required_steps}");
+        })
+        .Aggregate(1uL, LCM);
     }
 
     private static ulong LCM(ulong n1, ulong n2) => n1 * n2 / GCD(n1, n2);
 
-    private static ulong GCD(ulong n1, ulong n2) {
-        if(n2 == 0){
+    private static ulong GCD(ulong n1, ulong n2)
+    {
+        if (n2 == 0)
+        {
             return n1;
         }
 
